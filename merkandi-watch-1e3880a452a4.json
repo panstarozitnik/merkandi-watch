@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "merkandi-watch",
+  "private_key_id": "1e3880a452a4904b482d127c5e60b9eedf1c689a",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDCIhylT5qI79bc\npSaTaPXKf8XJ9LnRMVO/VVC3eG8Ymocib66566cqUvucPoUqjlUTXkkfWb41CSIZ\nxyEGl67QddnpIhiuFt9ZTgdV8YsJz0X4UYSdJWKMukqDxLCDS5fJUM2cNbvwvzMo\nhRGu2liQixAEFVr+OCWdKLwAgHUkb4pLCMYRyQySFN32C05E4HdF8Qm4i0eC/O99\n1yQlxzRlFSmoasu8LaCRONvjdkQDuI4W+me5S89svrUKwDDVk0fO0FQvBB7nkrjT\nxhJGhaoRmrXAwAtnHB5BWQhFBn4cI/0FCuCLD1fyhVcEtSs0n28oD+b+wUvMCzlL\nyp0VVGm1AgMBAAECggEAIly33dHyjFEJotoPszF1qi+GIrpw5pSY2onfJO6KGZyG\nlWOX1Zxe5Ti1hSEy4Ia7i9dZUZWIu6n/cXkkAR75qDfoB6JLpIrzY0MSvNVpkyWv\nYKYLN2ad5EN4O40l4kOP3SgykLcZKmKpiz9MkzreSM14mwRtrAhjrgb/Cgay1W0i\nXqRY/Zd8V6BM32eZOvRBw3rCLR46q+xZaAGOYDrUufx8rBWT0GoFmDolp7O7bQq6\nWRE0Gz4fFHj0bmiDgfH62FTmoERJCuRex80pKEi2o8USTLJFAQbCp3PdCuB2vPxp\n3/jwV6Jk6Hlv/BJMb71E7OI97QMrQo+D0HaqEy7aAQKBgQD7E+EL/O1aCjcr5zQb\nfp4mCO6dxaMFD/RF4T1+7R2bUTXVeewVSSFkQ2hwooWLw3wpT9sYEDgKKxwJrLGY\ninEqzY33aJr0O1eNdHhvJTAJVv1isGULdnFWSyt0WPSqjiostecw2qMTSc+YroLl\n4XlIOOzEOdTzca0/jqKuGJF/tQKBgQDF8G/7UTi3r8/1OtzEhOR4x6NA3k2KwkgE\n+RLQpr2238ZmI2ZpeYXjTqn5BPuTGRxQZBxjh1+lWrRXxmXmUrP5XlPhVMx1AEUV\n3Nz9UeCBrGc+fXojtk0YrCS01mdcfwbPQgStup0EPQ1eCmgsQ+O/+F/u5au3kWTy\nSSXeieWCAQKBgQCFLwpVnZkaBgk2FLKjUwr5CgvpTQkoikn9N3mzdnwaA34W+1Gs\nCNrZoJgqB0vn045tK5sArLnNSwjYaO7cB7P4DImeD7MCkufidUHdU1Cj460NSJyQ\n9AcyyzUFxpoiTr84cFVuqMuQU7r3NrrgzjXThb6yaCr55/cKm9LXntivcQKBgHQQ\nE9ltOrCaanoE1cZ1lfIsPVGgCB/A47Hmyl2GJ9+/PvpM75QRKayrR4c4oLsUEkIh\nMXQ6wJ6YnP6K2t0+yUEDSnPp4SkJy3iSVRJEnDvs92zw7llaX8KDzdIrldfqs/d7\nYnrr3X3KvrfRqluqQzUhUj8mdJXirypSMd5XRTgBAoGAT+DLsJQkEwIfxHf9MQ0G\nJQggX0Q/VSd+LaLNbL4GKTatkaXfXUs7dFkxE72mqMBDXtTnipR16G0XX77CLix+\nus2/lodvwcWYtZIZkt01cq4n2JehgCicne6DxVQkcSX7111FPLqC0E8X/Pj4FcY2\nsYzs87IgZJWqs22L9y64Spw=\n-----END PRIVATE KEY-----\n",
+  "client_email": "mercandi-scraper@merkandi-watch.iam.gserviceaccount.com",
+  "client_id": "115204414093511673918",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/mercandi-scraper%40merkandi-watch.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
