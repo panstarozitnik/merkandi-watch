@@ -1,0 +1,40 @@
+name: Merkandi Daily Scraper
+
+on:
+  schedule:
+    # Každý deň o 7:00 ráno (UTC = 9:00 SK letný čas)
+    - cron: "0 7 * * *"
+  # Možnosť spustiť ručne z GitHub UI
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout kódu
+        uses: actions/checkout@v4
+
+      - name: Nastav Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Inštaluj závislosti
+        run: pip install -r requirements.txt
+
+      - name: Spusti scraper
+        env:
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: python scraper.py
+
+      - name: Uloži log ako artifact (voliteľné)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-log-${{ github.run_number }}
+          path: "*.log"
+          retention-days: 7
