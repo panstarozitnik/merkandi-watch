@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merkandi Watch</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;800&display=swap');
+
+:root {
+  --bg: #0e0e10;
+  --s1: #16161a;
+  --s2: #1e1e24;
+  --b1: rgba(255,255,255,0.07);
+  --b2: rgba(255,255,255,0.13);
+  --tx: #e8e8ef;
+  --mu: #a0a0b8;
+  --gr: #c8f260;
+  --bl: #60c8f2;
+  --rd: #f26080;
+  --gd: #f2c060;
+  --r:  12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:'Syne',sans-serif;min-height:100vh;}
+
+/* CONFIG BANNER */
+#config-banner{
+  background:rgba(242,192,96,0.08);border-bottom:1px solid rgba(242,192,96,0.2);
+  padding:.6rem 2rem;font-size:.78rem;color:var(--gd);display:flex;align-items:center;gap:.75rem;
+}
+#config-banner input{
+  flex:1;max-width:480px;background:rgba(0,0,0,.4);border:1px solid rgba(242,192,96,.3);
+  border-radius:6px;padding:.3rem .6rem;color:var(--gd);font-family:'IBM Plex Mono',monospace;
+  font-size:.75rem;
+}
+#config-banner button{
+  padding:.3rem .8rem;border:1px solid var(--gd);border-radius:6px;background:transparent;
+  color:var(--gd);cursor:pointer;font-size:.75rem;font-family:'Syne',sans-serif;
+  transition:background .15s;
+}
+#config-banner button:hover{background:rgba(242,192,96,.1);}
+
+/* HEADER */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 2rem;border-bottom:1px solid var(--b1);
+  position:sticky;top:0;background:var(--bg);z-index:10;
+}
+.logo{font-size:1.1rem;font-weight:800;letter-spacing:-.02em;}
+.logo span{color:var(--gr);}
+.header-right{display:flex;align-items:center;gap:1rem;}
+#refresh-btn{
+  padding:.3rem .8rem;border:1px solid var(--b2);border-radius:6px;
+  background:var(--s1);color:var(--mu);cursor:pointer;font-size:.75rem;
+  font-family:'Syne',sans-serif;transition:all .15s;
+}
+#refresh-btn:hover{border-color:var(--gr);color:var(--gr);}
+#refresh-btn:disabled{opacity:.4;cursor:default;}
+.header-meta{font-size:.72rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;}
+
+/* STATS */
+.stats-bar{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--b1);border-bottom:1px solid var(--b1);
+}
+.stat-cell{background:var(--bg);padding:.9rem 1.5rem;display:flex;flex-direction:column;gap:.2rem;}
+.stat-label{font-size:.65rem;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace;}
+.stat-value{font-size:1.5rem;font-weight:800;color:var(--gr);}
+.stat-value.b{color:var(--bl);}
+.stat-value.g{color:var(--gd);}
+.stat-value.r{color:var(--rd);}
+
+/* CONTROLS */
+.controls{
+  display:flex;align-items:center;gap:.75rem;padding:.85rem 2rem;
+  border-bottom:1px solid var(--b1);flex-wrap:wrap;
+}
+.controls label{font-size:.72rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;}
+select,input[type=text]{
+  background:var(--s1);border:1px solid var(--b2);color:var(--tx);
+  border-radius:6px;padding:.3rem .55rem;font-family:'Syne',sans-serif;font-size:.78rem;
+}
+input[type=range]{accent-color:var(--gr);}
+.sort-btn{
+  padding:.3rem .7rem;border:1px solid var(--b2);border-radius:6px;
+  background:var(--s1);color:var(--mu);cursor:pointer;font-size:.75rem;
+  font-family:'Syne',sans-serif;transition:all .15s;
+}
+.sort-btn.active{border-color:var(--gr);color:var(--gr);background:rgba(200,242,96,.07);}
+.filter-group{display:flex;align-items:center;gap:.4rem;}
+#disc-val{font-size:.75rem;color:var(--gr);font-family:monospace;min-width:28px;}
+
+/* GRID */
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:1px;background:var(--b1);
+}
+
+/* CARD */
+.card{
+  background:var(--s1);padding:1.1rem;display:flex;flex-direction:column;
+  gap:.65rem;position:relative;cursor:pointer;transition:background .15s;
+}
+.card:hover{background:var(--s2);}
+.card.top{border-top:2px solid var(--gr);}
+.rank{
+  position:absolute;top:.8rem;right:.9rem;font-family:'IBM Plex Mono',monospace;
+  font-size:.62rem;color:var(--mu);
+}
+.card.top .rank{color:var(--gr);}
+.card-img{
+  width:100%;height:130px;object-fit:contain;background:var(--bg);
+  border-radius:8px;border:1px solid var(--b1);
+}
+.no-img{
+  width:100%;height:130px;background:var(--bg);border-radius:8px;
+  border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;
+  font-size:2rem;
+}
+.card-cat{font-size:.62rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.07em;}
+.card-title{
+  font-size:.85rem;font-weight:600;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.prices{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;}
+.price-now{font-size:1.2rem;font-weight:800;color:var(--gr);}
+.price-was{font-size:.75rem;color:var(--mu);text-decoration:line-through;font-family:'IBM Plex Mono',monospace;}
+.disc-badge{
+  margin-left:auto;background:rgba(242,96,128,.1);color:var(--rd);
+  border:1px solid rgba(242,96,128,.25);border-radius:4px;
+  padding:.12rem .45rem;font-size:.68rem;font-family:'IBM Plex Mono',monospace;font-weight:600;
+}
+.pills{display:flex;gap:.4rem;flex-wrap:wrap;}
+.pill{
+  font-size:.62rem;font-family:'IBM Plex Mono',monospace;padding:.18rem .45rem;
+  border-radius:4px;border:1px solid var(--b2);color:var(--mu);
+}
+.pill.ok{border-color:rgba(96,200,242,.35);color:var(--bl);}
+.bars{display:flex;flex-direction:column;gap:3px;}
+.bar-row{display:flex;align-items:center;gap:.4rem;}
+.bar-lbl{font-size:.6rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;width:36px;flex-shrink:0;}
+.bar-track{flex:1;height:3px;background:var(--bg);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;}
+.bar-num{font-size:.6rem;font-family:'IBM Plex Mono',monospace;color:var(--mu);width:24px;text-align:right;}
+.card-link{
+  display:block;text-align:center;padding:.45rem;border:1px solid var(--b2);
+  border-radius:6px;color:var(--mu);text-decoration:none;font-size:.72rem;
+  transition:all .15s;
+}
+.card-link:hover{border-color:var(--bl);color:var(--bl);background:rgba(96,200,242,.06);}
+
+/* STATES */
+.state{grid-column:1/-1;text-align:center;padding:5rem 2rem;color:var(--mu);}
+.state h2{font-size:1rem;margin-bottom:.4rem;}
+.state p{font-size:.78rem;line-height:1.6;}
+.spinner{
+  width:32px;height:32px;border:2px solid var(--b2);border-top-color:var(--gr);
+  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div style="background:rgba(96,200,242,0.07);border-bottom:1px solid rgba(96,200,242,0.15);padding:.5rem 2rem;font-size:.72rem;color:#60c8f2;">🌐 GitHub Pages — dáta sa obnovujú každý deň automaticky o 9:00</div>
+
+<header>
+  <div class="logo">merkandi<span>.</span>watch</div>
+  <div class="header-right">
+    <button id="refresh-btn" onclick="loadData()">↻ Obnoviť</button>
+    <div class="header-meta" id="h-date">—</div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat-cell"><span class="stat-label">Celkom v databáze</span><span class="stat-value" id="s-total">—</span></div>
+  <div class="stat-cell"><span class="stat-label">Zobrazených</span><span class="stat-value b" id="s-shown">—</span></div>
+  <div class="stat-cell"><span class="stat-label">Max. zľava</span><span class="stat-value g" id="s-maxd">—</span></div>
+  <div class="stat-cell"><span class="stat-label">Avg. skóre top 10</span><span class="stat-value r" id="s-avg">—</span></div>
+</div>
+
+<div class="controls">
+  <div class="filter-group">
+    <label>Zoradiť:</label>
+    <button class="sort-btn active" data-s="score">Skóre</button>
+    <button class="sort-btn" data-s="discount">Zľava %</button>
+    <button class="sort-btn" data-s="price">Cena ↑</button>
+    <button class="sort-btn" data-s="quantity">Min. qty</button>
+  </div>
+  <div class="filter-group">
+    <label>Min. zľava:</label>
+    <input type="range" id="disc-filter" min="0" max="90" value="50" step="5" style="width:80px">
+    <span id="disc-val">50%</span>
+  </div>
+  <div class="filter-group">
+    <label>Kategória:</label>
+    <select id="cat-filter"><option value="">Všetky</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Hľadať:</label>
+    <input type="text" id="search" placeholder="napr. topánky..." style="width:150px">
+  </div>
+  <div class="filter-group" style="margin-left:auto;">
+    <label>Zobraziť:</label>
+    <select id="limit-sel">
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="200">200</option>
+      <option value="9999">Všetky</option>
+    </select>
+  </div>
+</div>
+
+<div class="grid" id="grid">
+  <div class="state"><p>Vlož Sheet ID hore a klikni <strong>Uložiť & načítať</strong>.</p></div>
+</div>
+
+<script>
+// Auto-start
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let allOffers = [];
+let sortKey   = "score";
+let discMin   = 50;
+let catF      = "";
+let searchQ   = "";
+let limit     = 100;
+
+// ── DATA načítanie ───────────────────────────────────────────────────────────
+async function fetchSheetData() {
+  const resp = await fetch("data.json?t=" + Date.now());
+  if (!resp.ok) throw new Error("data.json nenájdený (HTTP " + resp.status + ") — spusti GitHub Action");
+  const json = await resp.json();
+  return json.offers || [];
+}
+
+
+
+// ── LOAD & RENDER ────────────────────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById("refresh-btn");
+  btn.disabled = true;
+  btn.textContent = "Načítavam...";
+  showLoading();
+
+  try {
+    const raw = await fetchSheetData();
+    if (!raw || !raw.length) { showError("Žiadne dáta — spusti GitHub Action."); return; }
+    allOffers = Array.isArray(raw) ? raw : (raw.offers || []);
+    if (!allOffers.length) { showError("Tabuľka je prázdna — spusti scraper."); return; }
+    populateCats();
+    updateStats();
+    renderGrid();
+    document.getElementById("h-date").textContent = `Načítané ${new Date().toLocaleTimeString("sk-SK")}`;
+  } catch(e) {
+    const isCors = e.message.includes('fetch') || e.message.includes('Failed') || e.message.includes('NetworkError');
+    const hint = isCors
+      ? '<br><small>⚠️ Prehliadač blokuje načítanie z <code>file://</code>. Spusti lokálny server:<br><code>python3 -m http.server 8080</code> a otvor <a href="http://localhost:8080/dashboard.html" style="color:#60c8f2">localhost:8080/dashboard.html</a></small>'
+      : '<br><small>Skontroluj Sheet ID a zdieľanie (Share → Anyone with link → Viewer)</small>';
+    showError('Chyba: ' + e.message + hint);
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "↻ Obnoviť";
+  }
+}
+
+function showLoading() {
+  document.getElementById("grid").innerHTML =
+    `<div class="state"><div class="spinner"></div><p>Načítavam z Google Sheets…</p></div>`;
+}
+function showError(msg) {
+  document.getElementById("grid").innerHTML =
+    `<div class="state"><h2>⚠️ Problém</h2><p>${msg}</p></div>`;
+}
+
+function getFiltered() {
+  return allOffers.filter(o => {
+    const disc = parseFloat(o.zlava_pct) || 0;
+    if (disc < discMin) return false;
+    if (catF && o.kategoria !== catF) return false;
+    if (searchQ && !(o.nazov||"").toLowerCase().includes(searchQ.toLowerCase())) return false;
+    return true;
+  });
+}
+
+function getSorted(arr) {
+  return [...arr].sort((a, b) => {
+    if (sortKey === "score")    return (parseFloat(b.skore)||0)      - (parseFloat(a.skore)||0);
+    if (sortKey === "discount") return (parseFloat(b.zlava_pct)||0)  - (parseFloat(a.zlava_pct)||0);
+    if (sortKey === "price")    return (parseFloat(a.cena_eur)||9e9) - (parseFloat(b.cena_eur)||9e9);
+    if (sortKey === "quantity") return (parseInt(a.min_mnozstvo)||9e9)- (parseInt(b.min_mnozstvo)||9e9);
+    return 0;
+  });
+}
+
+function updateStats() {
+  const filtered = getFiltered();
+  document.getElementById("s-total").textContent = allOffers.length.toLocaleString("sk");
+  document.getElementById("s-shown").textContent = Math.min(filtered.length, limit).toLocaleString("sk");
+  const maxD = Math.max(...allOffers.map(o => parseFloat(o.zlava_pct)||0));
+  document.getElementById("s-maxd").textContent = maxD > 0 ? `${Math.round(maxD)}%` : "—";
+  const top10 = getSorted(filtered).slice(0,10);
+  const avg = top10.length ? top10.reduce((s,o)=>s+(parseFloat(o.skore)||0),0)/top10.length : 0;
+  document.getElementById("s-avg").textContent = avg > 0 ? avg.toFixed(0) : "—";
+}
+
+function populateCats() {
+  const cats = [...new Set(allOffers.map(o=>o.kategoria).filter(Boolean))].sort();
+  const sel = document.getElementById("cat-filter");
+  sel.innerHTML = '<option value="">Všetky</option>' + cats.map(c=>`<option>${c}</option>`).join("");
+}
+
+function scoreColor(s) {
+  if (s >= 75) return "#c8f260";
+  if (s >= 55) return "#60c8f2";
+  if (s >= 35) return "#f2c060";
+  return "#f26080";
+}
+
+function renderCard(o, rank) {
+  const score = parseFloat(o.skore) || 0;
+  const disc  = parseFloat(o.zlava_pct) || 0;
+  const price = parseFloat(o.cena_eur);
+  const orig  = parseFloat(o.orig_cena_eur);
+  const qty   = parseInt(o.min_mnozstvo);
+  const rat   = parseFloat(o.hodnotenie_predajcu) || 0;
+  const isTop = rank <= 3;
+
+  const imgHTML = o.obrazok
+    ? `<img class="card-img" src="${o.obrazok}" alt="${o.nazov}" onerror="this.outerHTML='<div class=no-img>📦</div>'">`
+    : `<div class="no-img">📦</div>`;
+
+  const origHTML = orig ? `<span class="price-was">${orig.toLocaleString("sk")} €</span>` : "";
+  const discHTML = disc ? `<span class="disc-badge">-${Math.round(disc)}%</span>` : "";
+  const priceHTML = !isNaN(price) ? `${price.toLocaleString("sk")} €` : "—";
+
+  const qtyPill   = qty   ? `<span class="pill ${qty<=20?"ok":""}">min ${qty} ks</span>`        : "";
+  const ratPill   = rat   ? `<span class="pill ${rat>=4.5?"ok":""}">★ ${rat.toFixed(1)}</span>` : "";
+  const unitPrice = parseFloat(o.cena_za_kus);
+  const cpuPill   = !isNaN(unitPrice) && unitPrice > 0
+    ? `<span class="pill ${unitPrice<=5?"ok":""}">€/ks ${unitPrice.toFixed(2)}</span>` : "";
+
+  const bars = [
+    {lbl:"Zľava", val: Math.min(100, disc*1.25),        color:"#f26080aa"},
+    {lbl:"Cena",  val: unitPrice<=5?80:unitPrice<=15?50:20, color:"#c8f260aa"},
+    {lbl:"Qty",   val: qty<=20?90:qty<=100?60:25,       color:"#60c8f2aa"},
+    {lbl:"Seller",val: Math.min(100, rat*20),            color:"#f2c060aa"},
+  ].map(b=>`<div class="bar-row">
+    <span class="bar-lbl">${b.lbl}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(b.val)}%;background:${b.color}"></div></div>
+    <span class="bar-num">${Math.round(b.val)}</span>
+  </div>`).join("");
+
+  return `<div class="card ${isTop?"top":""}" onclick="window.open('${o.link||"#"}','_blank')">
+    <div class="rank">#${rank} · <span style="color:${scoreColor(score)}">${score.toFixed(0)} pts</span></div>
+    ${imgHTML}
+    <span class="card-cat">${o.kategoria||"—"}</span>
+    <div class="card-title">${o.nazov||"—"}</div>
+    <div class="prices">
+      <span class="price-now">${priceHTML}</span>${origHTML}${discHTML}
+    </div>
+    <div class="pills">${qtyPill}${cpuPill}${ratPill}</div>
+    <div class="bars">${bars}</div>
+    <a class="card-link" href="${o.link||"#"}" target="_blank" onclick="event.stopPropagation()">Zobraziť ponuku →</a>
+  </div>`;
+}
+
+function renderGrid() {
+  const filtered = getSorted(getFiltered()).slice(0, limit);
+  const grid = document.getElementById("grid");
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="state"><h2>Žiadne výsledky</h2><p>Uprav filtre.</p></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map((o,i) => renderCard(o, i+1)).join("");
+  updateStats();
+}
+
+// ── CONTROLS ─────────────────────────────────────────────────────────────────
+document.querySelectorAll(".sort-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".sort-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    sortKey = btn.dataset.s;
+    renderGrid();
+  });
+});
+document.getElementById("disc-filter").addEventListener("input", e => {
+  discMin = +e.target.value;
+  document.getElementById("disc-val").textContent = discMin + "%";
+  renderGrid();
+});
+document.getElementById("cat-filter").addEventListener("change", e => { catF = e.target.value; renderGrid(); });
+document.getElementById("search").addEventListener("input", e => { searchQ = e.target.value; renderGrid(); });
+document.getElementById("limit-sel").addEventListener("change", e => { limit = +e.target.value; renderGrid(); });
+
+loadData();
+</script>
+</body>
+</html>

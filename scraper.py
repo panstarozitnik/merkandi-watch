@@ -1,370 +1,177 @@
 #!/usr/bin/env python3
 """
-Merkandi.sk Scraper → Google Sheets
-Spúšťa sa automaticky cez GitHub Actions každý deň o 7:00.
+Merkandi.sk Scraper
+- Stiahne ponuky z merkandi.sk
+- Ohodnotí ich (zľava, cena/ks, množstvo, rating)
+- Zapíše data.json  → GitHub Pages dashboard ho číta
+- Zapíše do Google Sheets → história / záloha (voliteľné)
 """
 
-import json
-import time
-import re
-import os
-import hashlib
+import json, time, re, os, hashlib
 from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
-import gspread
-from google.oauth2.service_account import Credentials
 
-# ─── KONFIGURÁCIA ─────────────────────────────────────────────────────────────
+SPREADSHEET_ID   = os.environ.get("SPREADSHEET_ID", "")
+GOOGLE_CREDS_RAW = os.environ.get("GOOGLE_CREDENTIALS", "")
+USE_SHEETS = bool(SPREADSHEET_ID and GOOGLE_CREDS_RAW)
+if USE_SHEETS:
+    import gspread
+    from google.oauth2.service_account import Credentials
 
-SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]      # z GitHub Secrets
-GOOGLE_CREDS   = os.environ["GOOGLE_CREDENTIALS"]  # JSON string zo Secrets
-
-SHEET_TAB_OFFERS  = "ponuky"
-SHEET_TAB_LOG     = "log"
-
+OUTPUT_JSON  = Path("data.json")
+MAX_PAGES    = 8
+DELAY        = 1.5
 BASE_URL     = "https://merkandi.sk"
-LISTING_URLS = [
-    f"{BASE_URL}/offers",              # všetky ponuky
-    f"{BASE_URL}/offers?sort=newest",  # najnovšie
-]
-
-MAX_PAGES = 8          # koľko stránok prechádzame
-DELAY_SEC = 1.5        # pauza medzi requestmi (slušnosť)
-
-# Váhy hodnotenia (spolu = 1.0)
-WEIGHTS = {
-    "discount":  0.40,
-    "unit_price": 0.25,
-    "quantity":  0.20,
-    "rating":    0.15,
-}
-
-HEADERS = {
+LISTING_URLS = [f"{BASE_URL}/offers", f"{BASE_URL}/offers?sort=newest"]
+WEIGHTS      = {"discount":.40, "unit_price":.25, "quantity":.20, "rating":.15}
+HEADERS      = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept-Language": "sk-SK,sk;q=0.9",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
-# ─── GOOGLE SHEETS ────────────────────────────────────────────────────────────
-
-def connect_sheets():
-    creds_data = json.loads(GOOGLE_CREDS)
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    creds = Credentials.from_service_account_info(creds_data, scopes=scopes)
-    client = gspread.authorize(creds)
-    return client.open_by_key(SPREADSHEET_ID)
-
-def ensure_tabs(spreadsheet):
-    """Vytvorí tabuľky ak neexistujú."""
-    existing = [ws.title for ws in spreadsheet.worksheets()]
-
-    if SHEET_TAB_OFFERS not in existing:
-        ws = spreadsheet.add_worksheet(title=SHEET_TAB_OFFERS, rows=5000, cols=20)
-        ws.append_row([
-            "id", "datum", "nazov", "kategoria", "cena_eur",
-            "orig_cena_eur", "zlava_pct", "cena_za_kus",
-            "min_mnozstvo", "hodnotenie_predajcu",
-            "skore", "link", "obrazok", "aktivna"
-        ], value_input_option="RAW")
-        # Zmraziť hlavičku
-        ws.freeze(rows=1)
-        print(f"  ✅ Vytvorený tab '{SHEET_TAB_OFFERS}'")
-
-    if SHEET_TAB_LOG not in existing:
-        ws = spreadsheet.add_worksheet(title=SHEET_TAB_LOG, rows=1000, cols=8)
-        ws.append_row(["datum", "celkom_scraped", "novych", "aktualizovanych", "chyby", "trvanie_s"])
-        print(f"  ✅ Vytvorený tab '{SHEET_TAB_LOG}'")
-
-def load_existing_ids(ws_offers):
-    """Načíta všetky existujúce ID z tabuľky."""
-    try:
-        ids = ws_offers.col_values(1)[1:]  # preskočiť hlavičku
-        return set(ids)
-    except:
-        return set()
-
-# ─── SCRAPING ─────────────────────────────────────────────────────────────────
-
 def parse_price(text):
-    if not text:
-        return None
-    cleaned = re.sub(r"[^\d,.]", "", text.strip())
-    # Európsky formát: 1.234,56 → 1234.56
-    if "," in cleaned and "." in cleaned:
-        cleaned = cleaned.replace(".", "").replace(",", ".")
-    elif "," in cleaned:
-        cleaned = cleaned.replace(",", ".")
-    try:
-        val = float(cleaned)
-        return round(val, 2) if val > 0 else None
-    except:
-        return None
+    if not text: return None
+    c = re.sub(r"[^\d,.]", "", text.strip())
+    if "," in c and "." in c: c = c.replace(".", "").replace(",", ".")
+    elif "," in c: c = c.replace(",", ".")
+    try: v = float(c); return round(v,2) if v>0 else None
+    except: return None
 
-def make_offer_id(title, link):
-    """Unikátny hash pre každú ponuku."""
-    raw = (title + link).encode("utf-8")
-    return hashlib.md5(raw).hexdigest()[:12]
+def make_id(title, link):
+    return hashlib.md5((title+link).encode()).hexdigest()[:12]
 
 def scrape_page(session, url):
     try:
-        resp = session.get(url, timeout=20)
-        resp.raise_for_status()
+        r = session.get(url, timeout=20); r.raise_for_status()
     except Exception as e:
-        print(f"    ⚠️  Request failed: {e}")
-        return []
+        print(f"    warning: {e}"); return []
+    soup = BeautifulSoup(r.text, "html.parser")
+    cards = (soup.select(".offer-item") or soup.select(".offer__item") or
+             soup.select("[data-offer-id]") or soup.select(".product-card") or
+             soup.select("article.offer") or
+             [el for el in soup.select("article,li")
+              if el.find("a", href=re.compile(r"/offer"))])
+    return [o for c in cards for o in [extract(c)] if o]
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-
-    # Merkandi používa rôzne selektory — skúšame viacero
-    cards = (
-        soup.select(".offer-item") or
-        soup.select(".offer__item") or
-        soup.select("[data-offer-id]") or
-        soup.select(".product-card") or
-        soup.select("article.offer") or
-        soup.select(".list-item")
-    )
-
-    if not cards:
-        # Fallback: akékoľvek article/li s odkazom na /offer/
-        cards = [
-            el for el in soup.select("article, li")
-            if el.find("a", href=re.compile(r"/offer/|/offers/"))
-        ]
-
-    offers = []
-    for card in cards:
-        try:
-            o = extract_offer(card)
-            if o:
-                offers.append(o)
-        except Exception as e:
-            continue
-    return offers
-
-def extract_offer(card):
-    # Názov
-    title_el = card.select_one(
-        "h2, h3, .offer-title, .offer__title, .title, [class*='title'], [class*='name']"
-    )
-    title = title_el.get_text(strip=True) if title_el else ""
-    if len(title) < 5:
-        return None
-
-    # Odkaz
-    link_el = card.select_one("a[href]")
-    if not link_el:
-        return None
-    href = link_el["href"]
+def extract(card):
+    t = card.select_one("h2,h3,.offer-title,.offer__title,.title,[class*='title'],[class*='name']")
+    title = t.get_text(strip=True) if t else ""
+    if len(title) < 5: return None
+    a = card.select_one("a[href]")
+    if not a: return None
+    href = a["href"]
     link = href if href.startswith("http") else BASE_URL + href
+    pe = card.select_one(".price,.offer-price,.offer__price")
+    oe = card.select_one(".original-price,.price-old,.offer__price--old,s,del,strike")
+    cp = parse_price(pe.get_text() if pe else "")
+    op = parse_price(oe.get_text() if oe else "")
+    disc = round((1 - cp/op)*100, 1) if cp and op and op > cp else 0.0
+    qe = card.select_one("[class*='quantity'],[class*='amount'],[class*='pcs'],[class*='min']")
+    qt = re.findall(r"\d[\d\s]*", qe.get_text() if qe else "")
+    mq = int(qt[0].replace(" ","")) if qt else None
+    up = round(cp/mq, 4) if cp and mq else None
+    re_el = card.select_one("[class*='rating'],[class*='star'],.rating")
+    rn = re.findall(r"\d+\.?\d*", re_el.get_text() if re_el else "")
+    rat = float(rn[0]) if rn else 0.0
+    if rat > 10: rat /= 10
+    ce = card.select_one("[class*='category'],[class*='cat']")
+    cat = ce.get_text(strip=True) if ce else ""
+    ie = card.select_one("img[src],img[data-src]")
+    img = ""
+    if ie:
+        img = ie.get("data-src") or ie.get("src") or ""
+        if img and not img.startswith("http"): img = BASE_URL + img
+    return {"id":make_id(title,link),"title":title,"category":cat,
+            "current_price":cp,"original_price":op,"discount_pct":disc,
+            "unit_price":up,"min_quantity":mq,"seller_rating":round(rat,1),
+            "link":link,"image":img}
 
-    # Ceny
-    price_el = card.select_one(
-        ".price, .offer-price, .offer__price, [class*='price']:not([class*='original']):not([class*='old'])"
-    )
-    orig_el  = card.select_one(
-        ".original-price, .price-old, .offer__price--old, [class*='original'], [class*='old'], s, del, strike"
-    )
-    current_price  = parse_price(price_el.get_text()  if price_el  else "")
-    original_price = parse_price(orig_el.get_text()   if orig_el   else "")
-
-    # Výpočet zľavy
-    if current_price and original_price and original_price > current_price:
-        discount_pct = round((1 - current_price / original_price) * 100, 1)
-    else:
-        discount_pct = 0.0
-
-    # Množstvo
-    qty_el = card.select_one(
-        "[class*='quantity'], [class*='amount'], [class*='pcs'], [class*='units'], [class*='min']"
-    )
-    qty_text    = qty_el.get_text(strip=True) if qty_el else ""
-    qty_numbers = re.findall(r"\d[\d\s]*", qty_text)
-    min_qty     = int(qty_numbers[0].replace(" ", "")) if qty_numbers else None
-
-    # Cena za kus
-    unit_price = None
-    if current_price and min_qty and min_qty > 0:
-        unit_price = round(current_price / min_qty, 4)
-
-    # Hodnotenie
-    rating_el = card.select_one("[class*='rating'], [class*='star'], .rating, [class*='score']")
-    rating_text = rating_el.get_text(strip=True) if rating_el else ""
-    rating_nums = re.findall(r"\d+\.?\d*", rating_text)
-    seller_rating = float(rating_nums[0]) if rating_nums else 0.0
-    if seller_rating > 10:
-        seller_rating = seller_rating / 10  # normalizácia
-
-    # Kategória
-    cat_el = card.select_one("[class*='category'], [class*='cat'], [class*='tag']")
-    category = cat_el.get_text(strip=True) if cat_el else ""
-
-    # Obrázok
-    img_el = card.select_one("img[src], img[data-src]")
-    image = ""
-    if img_el:
-        image = img_el.get("data-src") or img_el.get("src") or ""
-        if image and not image.startswith("http"):
-            image = BASE_URL + image
-
-    return {
-        "id":             make_offer_id(title, link),
-        "title":          title,
-        "category":       category,
-        "current_price":  current_price,
-        "original_price": original_price,
-        "discount_pct":   discount_pct,
-        "unit_price":     unit_price,
-        "min_quantity":   min_qty,
-        "seller_rating":  round(seller_rating, 1),
-        "link":           link,
-        "image":          image,
-    }
-
-def crawl_all(max_pages=MAX_PAGES):
-    session = requests.Session()
-    session.headers.update(HEADERS)
-    seen_ids = set()
-    all_offers = []
-
-    for base_url in LISTING_URLS:
-        for page in range(1, max_pages + 1):
-            url = f"{base_url}&page={page}" if "?" in base_url else \
-                  (base_url if page == 1 else f"{base_url}?page={page}")
-            print(f"  → {url}")
+def crawl():
+    session = requests.Session(); session.headers.update(HEADERS)
+    seen, all_ = set(), []
+    for base in LISTING_URLS:
+        for page in range(1, MAX_PAGES+1):
+            url = (f"{base}&page={page}" if "?" in base else
+                   (base if page==1 else f"{base}?page={page}"))
+            print(f"  -> {url}")
             offers = scrape_page(session, url)
-            if not offers:
-                print(f"    Prázdna stránka, idem ďalej.")
-                break
-            new = [o for o in offers if o["id"] not in seen_ids]
-            seen_ids.update(o["id"] for o in new)
-            all_offers.extend(new)
-            print(f"    {len(new)} nových ({len(all_offers)} celkom)")
-            time.sleep(DELAY_SEC)
+            if not offers: break
+            new = [o for o in offers if o["id"] not in seen]
+            seen.update(o["id"] for o in new); all_.extend(new)
+            print(f"     +{len(new)} ({len(all_)} total)")
+            time.sleep(DELAY)
+    return all_
 
-    return all_offers
-
-# ─── SCORING ──────────────────────────────────────────────────────────────────
-
-def score_offer(o):
-    s = {}
-
-    # Zľava %
+def score(o):
     d = o["discount_pct"]
-    s["discount"] = min(100, d * 1.25)  # 80% zľava = 100 bodov
-
-    # Cena za kus
+    sd = min(100, d*1.25)
     cpu = o["unit_price"] or o["current_price"] or 999
-    if   cpu <= 1:   s["unit_price"] = 100
-    elif cpu <= 3:   s["unit_price"] = 85
-    elif cpu <= 5:   s["unit_price"] = 70
-    elif cpu <= 15:  s["unit_price"] = 45
-    elif cpu <= 50:  s["unit_price"] = 20
-    else:            s["unit_price"] = 5
-
-    # Min. množstvo
+    sp = 100 if cpu<=1 else 85 if cpu<=3 else 70 if cpu<=5 else 45 if cpu<=15 else 20 if cpu<=50 else 5
     mq = o["min_quantity"]
-    if   not mq:    s["quantity"] = 50
-    elif mq <= 5:   s["quantity"] = 100
-    elif mq <= 20:  s["quantity"] = 80
-    elif mq <= 100: s["quantity"] = 55
-    elif mq <= 500: s["quantity"] = 25
-    else:           s["quantity"] = 5
-
-    # Hodnotenie predajcu
-    r = o["seller_rating"]
-    s["rating"] = min(100, r * 20)
-
-    total = sum(WEIGHTS[k] * s[k] for k in WEIGHTS)
-    o["score"] = round(total, 1)
+    sq = 50 if not mq else 100 if mq<=5 else 80 if mq<=20 else 55 if mq<=100 else 25 if mq<=500 else 5
+    sr = min(100, o["seller_rating"]*20)
+    o["score"] = round(WEIGHTS["discount"]*sd+WEIGHTS["unit_price"]*sp+
+                       WEIGHTS["quantity"]*sq+WEIGHTS["rating"]*sr, 1)
     return o
 
-# ─── ZÁPIS DO SHEETS ──────────────────────────────────────────────────────────
-
-def write_to_sheets(spreadsheet, offers):
-    ws = spreadsheet.worksheet(SHEET_TAB_OFFERS)
-    existing_ids = load_existing_ids(ws)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
-
-    new_rows   = []
-    upd_count  = 0
-
-    for o in offers:
-        row = [
-            o["id"],
-            now,
-            o["title"],
-            o["category"],
-            o["current_price"]  or "",
-            o["original_price"] or "",
-            o["discount_pct"],
-            o["unit_price"]     or "",
-            o["min_quantity"]   or "",
-            o["seller_rating"],
-            o["score"],
-            o["link"],
-            o["image"],
-            "áno",
-        ]
-        if o["id"] not in existing_ids:
-            new_rows.append(row)
-
-    # Batch append nových riadkov (1 API call)
-    if new_rows:
-        ws.append_rows(new_rows, value_input_option="USER_ENTERED")
-        print(f"  ✅ Zapísaných {len(new_rows)} nových ponúk")
+def write_sheets(offers):
+    creds = Credentials.from_service_account_info(
+        json.loads(GOOGLE_CREDS_RAW),
+        scopes=["https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive"])
+    client = gspread.authorize(creds)
+    sp = client.open_by_key(SPREADSHEET_ID)
+    tabs = [w.title for w in sp.worksheets()]
+    if "ponuky" not in tabs:
+        ws = sp.add_worksheet("ponuky", 5000, 14)
+        ws.append_row(["id","datum","nazov","kategoria","cena_eur","orig_cena_eur",
+                        "zlava_pct","cena_za_kus","min_mnozstvo","hodnotenie_predajcu",
+                        "skore","link","obrazok","aktivna"])
+        ws.freeze(rows=1)
     else:
-        print("  ℹ️  Žiadne nové ponuky (všetky už existujú)")
-
-    return len(new_rows), upd_count
-
-def write_log(spreadsheet, total, new_count, upd_count, errors, duration):
-    ws = spreadsheet.worksheet(SHEET_TAB_LOG)
-    ws.append_row([
-        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        total, new_count, upd_count, errors, round(duration, 1)
-    ])
-
-# ─── MAIN ─────────────────────────────────────────────────────────────────────
+        ws = sp.worksheet("ponuky")
+    existing = set(ws.col_values(1)[1:])
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+    rows = [[o["id"],now,o["title"],o["category"],o["current_price"] or "",
+             o["original_price"] or "",o["discount_pct"],o["unit_price"] or "",
+             o["min_quantity"] or "",o["seller_rating"],o["score"],
+             o["link"],o["image"],"ano"]
+            for o in offers if o["id"] not in existing]
+    if rows:
+        ws.append_rows(rows, value_input_option="USER_ENTERED")
+        print(f"  Sheets: {len(rows)} novych riadkov")
+    else:
+        print("  Sheets: ziadne nove")
 
 def main():
-    t_start = time.time()
-    errors  = 0
-    print(f"\n{'━'*52}")
+    t0 = time.time()
+    print(f"\n{'='*50}")
     print(f"  Merkandi Scraper  {datetime.now().strftime('%d.%m.%Y %H:%M UTC')}")
-    print(f"{'━'*52}\n")
-
-    print("🔗 Pripájam sa na Google Sheets...")
-    spreadsheet = connect_sheets()
-    ensure_tabs(spreadsheet)
-    print(f"  Sheet: {spreadsheet.title}\n")
-
-    print("📥 Sťahujem ponuky z Merkandi...")
-    raw_offers = crawl_all()
-    print(f"\n  Celkom nájdených: {len(raw_offers)} ponúk\n")
-
-    print("🔢 Hodnotím ponuky...")
-    scored = [score_offer(o) for o in raw_offers]
-    scored.sort(key=lambda x: x["score"], reverse=True)
-
-    print("\n💾 Zapisujem do Google Sheets...")
-    new_count, upd_count = write_to_sheets(spreadsheet, scored)
-
-    duration = time.time() - t_start
-    write_log(spreadsheet, len(scored), new_count, upd_count, errors, duration)
-
-    print(f"\n🏆 TOP 5 dnes:")
+    print(f"{'='*50}\n")
+    print("Stahujem ponuky...")
+    raw = crawl()
+    print(f"\n  Najdenych: {len(raw)}\n")
+    print("Hodnotim...")
+    scored = sorted([score(o) for o in raw], key=lambda x: -x["score"])
+    result = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "total": len(scored),
+        "offers": scored[:200]
+    }
+    OUTPUT_JSON.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"data.json ulozeny ({len(scored)} ponuk)\n")
+    if USE_SHEETS:
+        print("Zapisujem do Google Sheets...")
+        try: write_sheets(scored)
+        except Exception as e: print(f"  Sheets chyba: {e}")
+    print(f"\nTOP 5:")
     for i, o in enumerate(scored[:5], 1):
         print(f"  {i}. [{o['score']:.0f}] {o['title'][:55]}")
-        print(f"      {o['current_price']} € | -{o['discount_pct']}% | {o['link']}")
-
-    print(f"\n✅ Hotovo za {duration:.1f}s — {new_count} nových ponúk v Sheets\n")
+    print(f"\nHotovo za {time.time()-t0:.1f}s\n")
 
 if __name__ == "__main__":
     main()
