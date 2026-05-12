@@ -1,5 +1,6 @@
 {
-  "generated_at": "2026-01-01T00:00:00+00:00",
+  "generated_at": "2026-05-12T09:12:51.430791+00:00",
   "total": 0,
-  "offers": []
+  "offers": [],
+  "error": "Scraper nenašiel ponuky — skontroluj selektory"
 }
