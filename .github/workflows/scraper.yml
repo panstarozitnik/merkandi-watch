@@ -3,12 +3,15 @@ name: Merkandi Daily Scraper + Deploy
 on:
   schedule:
     - cron: "0 7 * * *"   # 7:00 UTC = 9:00 SK letný čas
-  workflow_dispatch:       # manuálne spustenie z GitHub UI
+  workflow_dispatch:
 
 permissions:
-  contents: write          # pre commit data.json
-  pages: write             # pre GitHub Pages deploy
-  id-token: write          # pre GitHub Pages deploy
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   scrape-and-deploy:
@@ -32,13 +35,13 @@ jobs:
       - name: Inštaluj závislosti
         run: pip install -r requirements.txt
 
-      - name: Spusti scraper → vyprodukuje data.json
+      - name: Spusti scraper
         env:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python scraper.py
 
-      - name: Commitni data.json späť do repozitára
+      - name: Commitni data.json
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -46,16 +49,14 @@ jobs:
           git diff --cached --quiet || git commit -m "data: $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
 
-      - name: Priprav GitHub Pages výstup
+      - name: Priprav GitHub Pages
         run: |
           mkdir -p _site
           cp dashboard.html _site/index.html
           cp data.json      _site/data.json
 
-      - name: Upload GitHub Pages artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
 
       - name: Deploy na GitHub Pages
         id: deployment
