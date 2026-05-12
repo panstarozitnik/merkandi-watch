@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-12T09:24:38.840179+00:00",
+  "generated_at": "2026-05-12T09:50:28.035659+00:00",
   "total": 0,
   "offers": [],
-  "error": "Scraper nenašiel ponuky — skontroluj selektory"
+  "error": "403 Forbidden — Merkandi blokuje GitHub Actions"
 }
