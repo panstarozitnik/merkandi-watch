@@ -229,10 +229,21 @@ let limit     = 100;
 
 // ── DATA načítanie ───────────────────────────────────────────────────────────
 async function fetchSheetData() {
-  const resp = await fetch("data.json?t=" + Date.now());
-  if (!resp.ok) throw new Error("data.json nenájdený (HTTP " + resp.status + ") — spusti GitHub Action");
-  const json = await resp.json();
-  return json.offers || [];
+  // Skúsi relatívnu cestu (GitHub Pages) aj potom priamu GitHub raw URL
+  const urls = [
+    "data.json?t=" + Date.now(),
+    "https://raw.githubusercontent.com/panstarozitnik/merkandi-watch/main/data.json?t=" + Date.now()
+  ];
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json.offers && json.offers.length > 0) return json.offers;
+      }
+    } catch(e) { continue; }
+  }
+  throw new Error("Nepodarilo sa načítať dáta");
 }
 
 
