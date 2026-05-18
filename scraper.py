@@ -222,8 +222,10 @@ def git_push():
         print("  ⚠️  Git nenájdený"); return
 
     try:
-        # Pull pred pushom aby sa predišlo konfliktom
+        # Pull pred pushom — stash lokálne zmeny, pull, pop
+        subprocess.run([git_cmd, "stash"], capture_output=True)
         subprocess.run([git_cmd, "pull", "--rebase"], check=True)
+        subprocess.run([git_cmd, "stash", "pop"], capture_output=True)
         subprocess.run([git_cmd, "add", "data.json"], check=True)
         changed = subprocess.run(
             [git_cmd, "diff", "--cached", "--quiet"], capture_output=True
