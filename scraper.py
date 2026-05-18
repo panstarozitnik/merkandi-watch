@@ -227,6 +227,8 @@ def git_push():
         subprocess.run([git_cmd, "pull", "--rebase"], check=True)
         subprocess.run([git_cmd, "stash", "pop"], capture_output=True)
         subprocess.run([git_cmd, "add", "data.json"], check=True)
+        # Nikdy nepridaj cookies do gitu
+        subprocess.run([git_cmd, "reset", "HEAD", "cookies.json"], capture_output=True)
         changed = subprocess.run(
             [git_cmd, "diff", "--cached", "--quiet"], capture_output=True
         )
