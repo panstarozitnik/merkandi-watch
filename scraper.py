@@ -123,11 +123,31 @@ async def scrape():
         )
         page = await context.new_page()
 
+        # Načítaj uložené cookies ak existujú
+        cookies_file = Path("cookies.json")
+        if cookies_file.exists():
+            cookies = json.loads(cookies_file.read_text(encoding="utf-8"))
+            await context.add_cookies(cookies)
+            print("  Cookies načítané zo súboru.")
+        else:
+            print("  Cookies nenájdené — prihlás sa manuálne.")
+
         # Warm-up
         print(f"  Otvaram {BASE_URL} ...")
         await page.goto(BASE_URL, wait_until="domcontentloaded", timeout=30000)
         await page.wait_for_timeout(2000)
         print(f"  Title: {await page.title()}")
+
+        # Skontroluj či sme prihlásení
+        is_logged_in = await page.query_selector("[class*='logout'],[class*='account'],[class*='profile'],[href*='logout'],[href*='profil']")
+        if not is_logged_in and not cookies_file.exists():
+            print("\n  *** PRIHLÁS SA DO MERKANDI V OTVORENOM OKNE ***")
+            print("  Po prihlásení stlač Enter tu v cmd...")
+            input()
+            # Ulož cookies
+            cookies = await context.cookies()
+            cookies_file.write_text(json.dumps(cookies, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(f"  Cookies uložené ({len(cookies)} ks) — nabudúce sa prihlásenie preskočí.")
 
         # Ponuky
         print(f"\n  Prechadzam na: {OFFERS_URL}")
@@ -192,6 +212,7 @@ def git_push():
     git_cmd = shutil.which("git")
     if not git_cmd:
         for path in [
+            os.path.expandvars(r"%USERPROFILE%\AppData\Local\Programs\Git\cmd\git.exe"),
             r"C:\Program Files\Git\cmd\git.exe",
             r"C:\Program Files\Git\bin\git.exe",
         ]:
