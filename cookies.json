@@ -1,0 +1,92 @@
+[
+  {
+    "name": "vatInfo",
+    "value": "eyJpdiI6ImF4NHpRUWJhcHY3OVJ0QzVSM09ublE9PSIsInZhbHVlIjoibEFHcXVJV3Y5bjRTN0VWdEZ6Q1gyWFJacGwxV3EzSUw3MWJrT095aFcxdE1GVWR5TlpzT1M1azFoTzNMckI2ciIsIm1hYyI6IjAxYmZkYTlmMDFiZGVjNzA0MTQwM2I5ZDJiY2UxMmM3ZGQ3ZWZjZTZhNWExZTBhOWM2MjgwYWE0NDU1MzA2MGYiLCJ0YWciOiIifQ%3D%3D",
+    "domain": "merkandi.sk",
+    "path": "/",
+    "expires": 1780302008.18406,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "__cf_bm",
+    "value": "wT1M3uk_Uy5vnYdhOmqPrRfTZBz9OYrGLURTPlgNgN8-1779092408.5294187-1.0.1.1-C8tL9fnkk_wpxAWx_tBQhTatgSI.zCqjohXUD1lfF0P83qDguB_vNTvYJxSCq_vnOrxEeb93PF7ndFdFApaPxdFdelp7iq6dh2rXv_w5tmCPQLHzk6EHXQPGIz40pvHG",
+    "domain": ".onesignal.com",
+    "path": "/",
+    "expires": 1779094208.441204,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "_ga",
+    "value": "GA1.1.966210189.1779092409",
+    "domain": ".merkandi.sk",
+    "path": "/",
+    "expires": 1813652557.742581,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "MerkandiPopup",
+    "value": "true",
+    "domain": "merkandi.sk",
+    "path": "/",
+    "expires": 1779697208,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "IDE",
+    "value": "AHWqTUmUeqOL0Guw9BM1jwDs-F7Y8WJ3yLF3fVRzDtb0G7szxvlm8GB6x29IO4XF",
+    "domain": ".doubleclick.net",
+    "path": "/",
+    "expires": 1812788512.821145,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "_gcl_au",
+    "value": "1.1.1236536210.1779092409.688219056.1779092516.1779092516",
+    "domain": ".merkandi.sk",
+    "path": "/",
+    "expires": 1786868409,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "XSRF-TOKEN",
+    "value": "eyJpdiI6ImpHZFZRdzhEd2xKS1RxUVZjTnA5Z1E9PSIsInZhbHVlIjoiVXRXZ3lnTGlNNjJHcVExZHQ5cUpieEhNWGxHR1RBb0tBbmYzUnNucnpseHpOWGlJWFF2ZzMweFJENE01WjNRNmlHalR2WVFLNlhxUDVYTjI3SWxwbTRxdHFxanFpOUVxNzVoOWJ0dGYzQzh6dHRJcFVEc3ZQLzZaTXdFSkNnVWgiLCJtYWMiOiIzZTE3NGIwMDY1MmFiMjBmOTU3MGQ4MDY3YzdlYzY1YmQ2NmYyNGNjMzRiNDNmYWFkMTNjNTE5MGQzNzBlMThkIiwidGFnIjoiIn0%3D",
+    "domain": "merkandi.sk",
+    "path": "/",
+    "expires": 1780302152.434563,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "merkandiltd_session",
+    "value": "eyJpdiI6InhTWWs0WFA4RXM3MnlUN1psWURWSnc9PSIsInZhbHVlIjoiRTl6V2hHV1FvdU0vdzdPbDJDZHRLNERCK0hTUUd1aktBL1U2RmR3bDNWQkdKVW9rSmVzYVJoUHgzRnRMS1NyNUc1ZVNjWEVXb2Fla1p1WFNMSGJVTW9sQ0VkYWxlMUI3MnNhUlVjemtjWFp4bXBXRWpXYVZnaWhtWVlET1d3Y00iLCJtYWMiOiIyNDY1MTE4ZThmNWEwYTk1N2Y0ZjE3ZWQyOGE0YzdhNjJjYjM3ZTBkOGNkNWI5MmQwMDhhMTIxYzE5YWU0ZTQ4IiwidGFnIjoiIn0%3D",
+    "domain": "merkandi.sk",
+    "path": "/",
+    "expires": 1780302152.434724,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "_ga_F4DRJ4WNM6",
+    "value": "GS2.1.s1779092408$o1$g1$t1779092557$j60$l0$h1829260188$dELYBHn53pL4FfIw5oB6m0qhlebBiN3iNug",
+    "domain": ".merkandi.sk",
+    "path": "/",
+    "expires": 1813652557.742305,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  }
+]
