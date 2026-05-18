@@ -1,0 +1,37 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]   # nasadí vždy keď pushneš z PC
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Priprav súbory
+        run: |
+          mkdir -p _site
+          cp dashboard.html _site/index.html
+          cp data.json      _site/data.json
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+
+      - name: Deploy na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
